@@ -498,13 +498,13 @@ static int verify_auth_token(cdn_conf *cfg, request_rec *r)
     return DECLINED;
   }
 
-  /* compute the correct auth token using the connection's remote IP */
-  token = make_auth_token(r, r->connection->remote_ip, uri_base, params,
+  /* compute the correct auth token using the connection's client IP */
+  token = make_auth_token(r, r->connection->client_ip, uri_base, params,
                           cfg->auth_key);
 
   ap_log_error(APLOG_MARK, APLOG_DEBUG, APR_SUCCESS, r->server,
                "verify_auth_token: comparing vox_sig %s with token %s "
-               "using remote_ip %s", vox_sig, token, r->connection->remote_ip);
+               "using client_ip %s", vox_sig, token, r->connection->client_ip);
 
   if (!strncasecmp(token, vox_sig, SHA1_STR_SIZE))
     return OK;
@@ -563,8 +563,8 @@ static char * add_auth_token(apr_pool_t *pool, saxctxt *ctx, apr_uri_t *u)
       (ip = apr_strtok(forwarded_list, ", \t", &last)))
     auth_token = make_auth_token(ctx->f->r, ip, unparsed_uri, params,
                                  ctx->cfg->auth_key);
-  else /* Otherwise, use the normal remote_ip */
-    auth_token = make_auth_token(ctx->f->r, ctx->f->r->connection->remote_ip,
+  else /* Otherwise, use the normal client_ip */
+    auth_token = make_auth_token(ctx->f->r, ctx->f->r->connection->client_ip,
                                  unparsed_uri, params, ctx->cfg->auth_key);
 
   if (auth_token) {
